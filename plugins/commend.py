@@ -173,7 +173,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
 	    InlineKeyboardButton('💻 sᴏᴜʀᴄᴇ ᴄᴏᴅᴇ', url='@BIHARICHATING_BOT')
 	],[
             InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='start'),
-	    InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
+	    InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='closedata')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         me2 = (await client.get_me()).mention
