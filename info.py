@@ -18,11 +18,11 @@ VERIFIED_LOG = int(environ.get('VERIFIED_LOG', '-1002908124049'))  # Verified us
 SUPPORT_GROUP = int(environ.get("SUPPORT_GROUP", "-1003170937639"))
 
 # add admin IDs 11111 2222 3333 and add auth channel IDs -100XXX -100XXX -100XXX
-ADMINS = list(map(int, environ.get('ADMINS', '5977931010').split()))  # List of admin user IDs
+ADMINS = list(map(int, environ.get('ADMINS', '7881009185').split()))  # List of admin user IDs
 AUTH_CHANNEL = list(map(int, environ.get("AUTH_CHANNEL", "-1002102037760 -1002012150170").split()))  # Allowed channels for authorization
 
 # username add without @
-OWNER_USERNAME = environ.get("OWNER_USERNAME", 'BOT_OWNER26')  # Owner's username
+OWNER_USERNAME = environ.get("OWNER_USERNAME", '@Huffgfyujicfy_bot')  # Owner's username
 BOT_USERNAME = environ.get("BOT_USERNAME", 'Huffgfyujicfy_bot')  # Bot's username
 
 # 🔗 Channel & Support Links
