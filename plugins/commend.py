@@ -161,13 +161,29 @@ async def start(client, message):
 # --------------------  CALLBACK HANDLER  --------------------
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
-    # =====  BULLET-PROOF CLOSE BUTTON  =====
+    # =====  CLOSE = BACK BUTTON  =====
     if query.data == "close_data":
         try:
             await query.message.delete()
-            await query.answer("✅ Closed", show_alert=True)
         except Exception:
-            await query.answer("❌ Message already deleted or expired", show_alert=True)
+            pass
+        # Show start screen again
+        buttons = [[
+            InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇᴅ •', url=CHANNEL),
+            InlineKeyboardButton('• sᴜᴘᴘᴏʀᴛ •', url=SUPPORT)
+        ], [
+            InlineKeyboardButton('• ʜᴇʟᴘ •', callback_data='help'),
+            InlineKeyboardButton('• ᴀʙᴏᴜᴛ •', callback_data='about')
+        ], [
+            InlineKeyboardButton('✨ ʙᴜʏ ꜱᴜʙꜱᴄʀɪᴘᴛɪᴏɴ : ʀᴇᴍᴏᴠᴇ ᴀᴅꜱ ✨', callback_data="premium_info")
+        ]]
+        await client.send_message(
+            chat_id=query.from_user.id,
+            text=script.START_TXT.format(query.from_user.mention, BOT_USERNAME),
+            reply_markup=InlineKeyboardMarkup(buttons),
+            disable_web_page_preview=True
+        )
+        await query.answer("✅ Back to home", show_alert=True)
         return
 
     if query.data == "about":
