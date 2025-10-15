@@ -4,31 +4,37 @@ from database.users_db import db
 from pyrogram import Client, filters, enums
 from pyrogram.errors import *
 from pyrogram.types import *
-from info import BOT_USERNAME, URL, BATCH_PROTECT_CONTENT, ADMINS, PROTECT_CONTENT, OWNER_USERNAME, SUPPORT, PICS, FILE_PIC, CHANNEL, VERIFIED_LOG, LOG_CHANNEL, FSUB, BIN_CHANNEL, VERIFY_EXPIRE, BATCH_FILE_CAPTION, FILE_CAPTION, VERIFY_IMG, QR_CODE
+from info import (
+    BOT_USERNAME, URL, BATCH_PROTECT_CONTENT, ADMINS, PROTECT_CONTENT,
+    OWNER_USERNAME, SUPPORT, PICS, FILE_PIC, CHANNEL, VERIFIED_LOG,
+    LOG_CHANNEL, FSUB, BIN_CHANNEL, VERIFY_EXPIRE, BATCH_FILE_CAPTION,
+    FILE_CAPTION, VERIFY_IMG, QR_CODE
+)
 from datetime import datetime
 from web.utils.file_properties import get_hash
 from utils import get_readable_time, verify_user, check_token, get_size
 from web.utils import StartTime, __version__
 from plugins.avbot import is_user_joined, av_verification, av_x_verification
-import os
 import json
-import asyncio
 import logging
 
 logger = logging.getLogger(__name__)
-BATCH_FILES = {}  
+BATCH_FILES = {}
 
+# --------------------  START COMMAND  --------------------
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
     user_id = message.from_user.id
     mention = message.from_user.mention
     me2 = (await client.get_me()).mention
+
     if FSUB:
         if not await is_user_joined(client, message):
             return
     if not await db.is_user_exist(user_id):
         await db.add_user(user_id, message.from_user.first_name)
         await client.send_message(LOG_CHANNEL, script.LOG_TEXT.format(me2, user_id, mention))
+
     if len(message.command) == 1 or message.command[1] == "start":
         buttons = [[
             InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇᴅ •', url=CHANNEL),
@@ -36,7 +42,7 @@ async def start(client, message):
         ], [
             InlineKeyboardButton('• ʜᴇʟᴘ •', callback_data='help'),
             InlineKeyboardButton('• ᴀʙᴏᴜᴛ •', callback_data='about')
-        ],[
+        ], [
             InlineKeyboardButton('✨ ʙᴜʏ ꜱᴜʙꜱᴄʀɪᴘᴛɪᴏɴ : ʀᴇᴍᴏᴠᴇ ᴀᴅꜱ ✨', callback_data="premium_info")
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
@@ -47,56 +53,46 @@ async def start(client, message):
         )
         return
 
-    # ✅ Handle /start file_<id>
+    # Deep-link handlers
     msg = message.command[1]
-
     if msg.startswith("file_"):
         _, file_id = msg.split("_", 1)
-
-        # Get the original message from BIN_CHANNEL
         original_message = await client.get_messages(int(BIN_CHANNEL), int(file_id))
-
-        # Detect media
         media = original_message.document or original_message.video or original_message.audio
         caption = None
-
         if media:
             file_name = media.file_name or "Unnamed File"
             file_size = get_size(media.file_size)
             caption = FILE_CAPTION.format(CHANNEL, file_name)
-
-        # Send with caption and protect_content
         return await client.copy_message(
             chat_id=message.from_user.id,
             from_chat_id=int(BIN_CHANNEL),
             message_id=int(file_id),
             caption=caption,
             protect_content=PROTECT_CONTENT
-	)
+        )
 
     if msg.startswith("verify-"):
         try:
             _, userid, token = msg.split("-", 2)
         except ValueError:
             return await message.reply_text("<b>ʟɪɴᴋ ᴇxᴘɪʀᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ...!</b>")
-
         if str(message.from_user.id) != str(userid):
             return await message.reply_text("<b>ʟɪɴᴋ ᴇxᴘɪʀᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ...!</b>")
-
         is_valid = await check_token(client, userid, token)
         if is_valid:
             await message.reply_photo(
-                photo=(VERIFY_IMG),
+                photo=VERIFY_IMG,
                 caption=script.VERIFIED_COMPLETE_TEXT.format(message.from_user.mention),
                 parse_mode=enums.ParseMode.HTML
-	    )
+            )
             await verify_user(client, userid, token)
             await client.send_message(
                 VERIFIED_LOG,
                 script.VERIFIED_LOG_TEXT.format(
-                message.from_user.mention,
-                message.from_user.id,
-                datetime.now(pytz.timezone('Asia/Kolkata')).strftime('%d %B %Y')
+                    message.from_user.mention,
+                    message.from_user.id,
+                    datetime.now(pytz.timezone('Asia/Kolkata')).strftime('%d %B %Y')
                 )
             )
         else:
@@ -108,7 +104,7 @@ async def start(client, message):
         if not await db.has_premium_access(user_id):
             verified = await av_x_verification(client, message)
             if not verified:
-                return  # If not verified, exit
+                return
         sts = await message.reply("<b>Please wait...</b>")
         msgs = BATCH_FILES.get(file_id)
         if not msgs:
@@ -128,7 +124,8 @@ async def start(client, message):
             f_caption = msg.get("caption", "")
             if BATCH_FILE_CAPTION:
                 try:
-                    f_caption = BATCH_FILE_CAPTION.format(CHANNEL,
+                    f_caption = BATCH_FILE_CAPTION.format(
+                        CHANNEL,
                         file_name=title or "",
                         file_size=size or "",
                         file_caption=f_caption or ""
@@ -136,7 +133,6 @@ async def start(client, message):
                 except Exception as e:
                     logger.warning(f"Caption formatting error: {e}")
                     f_caption = f_caption or title or ""
-
             if not f_caption:
                 f_caption = title or "Untitled"
             try:
@@ -158,22 +154,26 @@ async def start(client, message):
             except Exception as e:
                 logger.error(f"❌ Failed to send media: {e}", exc_info=True)
                 continue
-
             await asyncio.sleep(1)
-
         await sts.delete()
         return
-	    
+
+# --------------------  CALLBACK HANDLER  --------------------
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
+    # =====  BULLET-PROOF CLOSE BUTTON  =====
     if query.data == "close_data":
-        await query.message.delete()
-    elif query.data == "about":
+        try:
+            await query.message.delete()
+            await query.answer("✅ Closed", show_alert=True)
+        except Exception:
+            await query.answer("❌ Message already deleted or expired", show_alert=True)
+        return
+
+    if query.data == "about":
         buttons = [[
-	    InlineKeyboardButton('💻 sᴏᴜʀᴄᴇ ᴄᴏᴅᴇ', url='@BIHARICHATING_BOT')
-	],[
             InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='start'),
-	    InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
+            InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         me2 = (await client.get_me()).mention
@@ -182,15 +182,15 @@ async def cb_handler(client: Client, query: CallbackQuery):
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
         )
-    
+
     elif query.data == "start":
         buttons = [[
             InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇᴅ •', url=CHANNEL),
-	    InlineKeyboardButton('• sᴜᴘᴘᴏʀᴛ •', url=SUPPORT)
-        ],[
+            InlineKeyboardButton('• sᴜᴘᴘᴏʀᴛ •', url=SUPPORT)
+        ], [
             InlineKeyboardButton('• ʜᴇʟᴘ •', callback_data='help'),
             InlineKeyboardButton('• ᴀʙᴏᴜᴛ •', callback_data='about')
-        ],[
+        ], [
             InlineKeyboardButton('✨ ʙᴜʏ ꜱᴜʙꜱᴄʀɪᴘᴛɪᴏɴ : ʀᴇᴍᴏᴠᴇ ᴀᴅꜱ ✨', callback_data="premium_info")
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
@@ -198,26 +198,25 @@ async def cb_handler(client: Client, query: CallbackQuery):
             text=script.START_TXT.format(query.from_user.mention, BOT_USERNAME),
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
-	    )
-	    
+        )
+
     elif query.data == "help":
         buttons = [[
             InlineKeyboardButton('• ᴀᴅᴍɪɴ •', callback_data='admincmd')
-	],[
-	    InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='start'),
-	    InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
+        ], [
+            InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='start'),
+            InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         await query.message.edit_text(
             text=script.HELP_TXT,
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
-        )  
+        )
 
     elif query.data == "admincmd":
-        #if user isnt admin then return
-        if not query.from_user.id in ADMINS:
-            return await query.answer('This Feature Is Only For Admins !' , show_alert=True)
+        if query.from_user.id not in ADMINS:
+            return await query.answer('This Feature Is Only For Admins!', show_alert=True)
         buttons = [[
             InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='start')
         ]]
@@ -225,60 +224,58 @@ async def cb_handler(client: Client, query: CallbackQuery):
         await query.message.edit_text(
             text=script.ADMIN_CMD_TXT,
             reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML,
-       )
+            parse_mode=enums.ParseMode.HTML
+        )
 
     elif query.data == "premium_info":
         buttons = [[
-		InlineKeyboardButton('🍁 ᴄʟɪᴄᴋ ᴀʟʟ ᴘʟᴀɴꜱ & ᴘʀɪᴄᴇ 🍁', callback_data='check_plan')
-        ],[
+            InlineKeyboardButton('🍁 ᴄʟɪᴄᴋ ᴀʟʟ ᴘʟᴀɴꜱ & ᴘʀɪᴄᴇ 🍁', callback_data='check_plan')
+        ], [
             InlineKeyboardButton('⋞ ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ ', callback_data='start')
-	]]
+        ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         await query.message.edit_text(
             text=script.PREMIUM_TEXT.format(query.from_user.mention),
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
-	)
+        )
 
     elif query.data == "check_plan":
         buttons = [
             [
-                InlineKeyboardButton(
-                    "☆📸 ꜱᴇɴᴅ ꜱᴄʀᴇᴇɴꜱʜᴏᴛ 📸☆",
-                    url=f"https://t.me/{OWNER_USERNAME}"),
-            ],[
+                InlineKeyboardButton("☆📸 ꜱᴇɴᴅ ꜱᴄʀᴇᴇɴꜱʜᴏᴛ 📸☆", url=f"https://t.me/{OWNER_USERNAME}"),
+            ], [
                 InlineKeyboardButton("• ʙᴀᴄᴋ •", callback_data='premium_info'),
                 InlineKeyboardButton("• ᴄʟᴏꜱᴇ •", callback_data="close_data"),
-	    ]
+            ]
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         await query.message.edit_text(
             text=script.CHECK_PLAN_TXT.format(query.from_user.mention),
             reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML,
-	)
+            parse_mode=enums.ParseMode.HTML
+        )
 
     elif query.data == "seeplans":
         btn = [[
             InlineKeyboardButton('🍁 ᴄʟɪᴄᴋ ᴀʟʟ ᴘʟᴀɴꜱ & ᴘʀɪᴄᴇ 🍁', callback_data='check_plan')
-        ],[
+        ], [
             InlineKeyboardButton('❌ ᴄʟᴏsᴇ ❌', callback_data='close_data')
         ]]
         reply_markup = InlineKeyboardMarkup(btn)
-        m=await query.message.reply_sticker("CAACAgQAAxkBAAEiLZ9l7VMuTY7QHn4edR6ouHUosQQ9gwACFxIAArzT-FOmYU0gLeJu7x4E") 
+        m = await query.message.reply_sticker("CAACAgQAAxkBAAEiLZ9l7VMuTY7QHn4edR6ouHUosQQ9gwACFxIAArzT-FOmYU0gLeJu7x4E")
         await m.delete()
         await query.message.reply_photo(
             photo=(QR_CODE),
             caption=script.PREMIUM_TEXT.format(query.from_user.mention),
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
-	)
+        )
 
-    # ⏩ Pagination: Next/Back
+    # ----------  pagination / sendfile / deletefile  ----------
     elif query.data.startswith("filespage_"):
         page = int(query.data.split("_")[1])
-        user_id = query.from_user.id	    
+        user_id = query.from_user.id
         files = await db.files.find({"user_id": user_id}).to_list(length=100)
         per_page = 7
         total_pages = (len(files) + per_page - 1) // per_page
@@ -305,7 +302,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
 
     elif query.data.startswith("delfilespage_"):
         page = int(query.data.split("_")[1])
-        user_id = query.from_user.id	    
+        user_id = query.from_user.id
         files = await db.files.find({"user_id": user_id}).to_list(length=100)
         per_page = 7
         total_pages = (len(files) + per_page - 1) // per_page
@@ -354,7 +351,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             return await query.answer()
         except Exception:
             return await query.answer("⚠️ Failed to send file.", show_alert=True)
-		
+
     elif query.data.startswith("deletefile_"):
         file_msg_id = int(query.data.split("_")[1])
         user_id = query.from_user.id
@@ -370,8 +367,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
             pass
         await query.answer("✅ Fɪʟᴇ ᴅᴇʟᴇᴛᴇᴅ ꜱᴜᴄᴄᴇꜱꜱғᴜʟʟʏ!", show_alert=True)
         await query.message.edit_text("🗑️ Fɪʟᴇ ʜᴀꜱ ʙᴇᴇɴ ᴅᴇʟᴇᴛᴇᴅ ꜱᴜᴄᴄᴇꜱꜱғᴜʟʟʏ.")
-	
 
+
+# --------------------  USER COMMANDS  --------------------
 @Client.on_message(filters.private & filters.command("files"))
 async def list_user_files(client, message: Message):
     user_id = message.from_user.id
@@ -392,10 +390,12 @@ async def list_user_files(client, message: Message):
         nav_btns.append(InlineKeyboardButton("➡️ Nᴇxᴛ", callback_data=f"filespage_{page + 1}"))
     nav_btns.append(InlineKeyboardButton("❌ ᴄʟᴏsᴇ ❌", callback_data="close_data"))
     btns.append(nav_btns)
-    await message.reply_photo(photo=FILE_PIC,
+    await message.reply_photo(
+        photo=FILE_PIC,
         caption=f"📁 Tᴏᴛᴀʟ ғɪʟᴇꜱ: {len(files)} | Pᴀɢᴇ {page}/{total_pages}",
         reply_markup=InlineKeyboardMarkup(btns)
     )
+
 
 @Client.on_message(filters.private & filters.command("del_files"))
 async def delete_files_list(client, message):
@@ -417,35 +417,35 @@ async def delete_files_list(client, message):
         nav_btns.append(InlineKeyboardButton("➡️ Nᴇxᴛ", callback_data=f"delfilespage_{page + 1}"))
     nav_btns.append(InlineKeyboardButton("❌ ᴄʟᴏsᴇ ❌", callback_data="close_data"))
     btns.append(nav_btns)
-    await message.reply_photo(photo=FILE_PIC,
+    await message.reply_photo(
+        photo=FILE_PIC,
         caption=f"📁 Tᴏᴛᴀʟ ғɪʟᴇꜱ: {len(files)} | Pᴀɢᴇ {page}/{total_pages}",
         reply_markup=InlineKeyboardMarkup(btns)
     )
 
+
 @Client.on_message(filters.command("about"))
 async def about(client, message):
     buttons = [[
-       InlineKeyboardButton('💻 sᴏᴜʀᴄᴇ ᴄᴏᴅᴇ', url='@BIHARICHATING_BOT')
-    ],[
-       InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
+        InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
     ]]
     reply_markup = InlineKeyboardMarkup(buttons)
     me2 = (await client.get_me()).mention
     await message.reply_text(
         text=script.ABOUT_TXT.format(me2, me2, get_readable_time(time.time() - StartTime), __version__),
-        disable_web_page_preview=True, 
+        disable_web_page_preview=True,
         reply_markup=reply_markup
     )
 
- 
+
 @Client.on_message(filters.command("help"))
 async def help(client, message):
     btn = [[
-       InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
+        InlineKeyboardButton('• ᴄʟᴏsᴇ •', callback_data='close_data')
     ]]
     reply_markup = InlineKeyboardMarkup(btn)
     await message.reply_text(
         text=script.HELP2_TXT,
-        disable_web_page_preview=True, 
+        disable_web_page_preview=True,
         reply_markup=reply_markup
-)
+    )
