@@ -62,9 +62,9 @@ Cʜᴀɴɴᴇʟ Uꜱᴀɢᴇ:
 
 📮 Hᴇʟᴘ & Sᴜᴘᴘᴏʀᴛ:
 • Uᴘᴅᴀᴛᴇꜱ: @updatechannal123
-• Sᴜᴘᴘᴏʀᴛ: @updatechannal123
+• Sᴜᴘᴘᴏʀᴛ: @BIHARICHATING_BOT
 
- <u><i>ʀᴇᴘᴏʀᴛ ʙᴜɢs ᴛᴏ  <a href='https://t.me/AV_OWNER_BOT'>ᴅᴇᴠᴇʟᴏᴘᴇʀ</a></u></i></b>"""
+ <u><i>ʀᴇᴘᴏʀᴛ ʙᴜɢs ᴛᴏ  <a href='https://t.me/BIHARICHATING_BOT'>ᴅᴇᴠᴇʟᴏᴘᴇʀ</a></u></i></b>"""
 
     CAPTION = """🎬 <i><a href='{}'>{}</a></i>"""
     
