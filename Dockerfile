@@ -1,4 +1,4 @@
-FROM python:3.10.8-slim-buster
+FROM python:3.10-slim-bookworm
 
 #Dont Remove My Credit @AV_BOTz_UPDATE 
 #This Repo Is By @BOT_OWNER26 
@@ -23,3 +23,4 @@ COPY . /AV_FILE_TO_LINK
 # For Any Kind Of Error Ask Us In Support Group @AV_SUPPORT_GROUP
 
 CMD ["python", "bot.py"]
+
